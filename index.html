@@ -107,8 +107,9 @@
       const [score, setScore] = useState(100);
       const [unlockedHints, setUnlockedHints] = useState({});
 
-      // --- 音效系統 (Web Audio API 滴答聲) ---
+      // --- 音效系統 (Web Audio API 配樂與滴答聲) ---
       const audioCtxRef = useRef(null);
+      const musicStateRef = useRef({ intervalId: null, step: 0, master: null });
       const isMutedRef = useRef(false);
       const [isMuted, setIsMuted] = useState(false);
 
@@ -125,6 +126,119 @@
         }
       };
 
+      const stopSpyMusic = () => {
+        const state = musicStateRef.current;
+        if (state.intervalId) {
+          clearInterval(state.intervalId);
+          state.intervalId = null;
+        }
+        if (state.master) {
+          try {
+            const ctx = audioCtxRef.current;
+            const masterToDisconnect = state.master;
+            masterToDisconnect.gain.cancelScheduledValues(ctx.currentTime);
+            masterToDisconnect.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+            setTimeout(() => {
+              try { masterToDisconnect.disconnect(); } catch (e) {}
+            }, 250);
+          } catch (e) {}
+          state.master = null;
+        }
+      };
+
+      const startSpyMusic = () => {
+        if (!audioCtxRef.current || isMutedRef.current || musicStateRef.current.intervalId) return;
+
+        try {
+          const ctx = audioCtxRef.current;
+          const master = ctx.createGain();
+          const lowpass = ctx.createBiquadFilter();
+          const delay = ctx.createDelay();
+          const delayGain = ctx.createGain();
+
+          master.gain.setValueAtTime(0.0001, ctx.currentTime);
+          master.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 1.2);
+
+          lowpass.type = "lowpass";
+          lowpass.frequency.setValueAtTime(1800, ctx.currentTime);
+          lowpass.Q.setValueAtTime(0.6, ctx.currentTime);
+
+          delay.delayTime.setValueAtTime(0.22, ctx.currentTime);
+          delayGain.gain.setValueAtTime(0.08, ctx.currentTime);
+
+          master.connect(lowpass);
+          lowpass.connect(ctx.destination);
+          lowpass.connect(delay);
+          delay.connect(delayGain);
+          delayGain.connect(ctx.destination);
+
+          musicStateRef.current.master = master;
+
+          const bassPattern = [110, 110, 130.81, 123.47, 110, 98, 103.83, 110];
+          const leadPattern = {
+            2: 440,
+            4: 392,
+            6: 415.3,
+            10: 329.63,
+            12: 349.23,
+            14: 311.13
+          };
+          const padChords = [
+            [220, 261.63, 329.63],
+            [196, 246.94, 293.66],
+            [207.65, 246.94, 311.13],
+            [185, 233.08, 277.18]
+          ];
+
+          const playTone = (frequency, startTime, duration, type, peak, destination = master) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(frequency, startTime);
+            gain.gain.setValueAtTime(0.0001, startTime);
+            gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+            osc.connect(gain);
+            gain.connect(destination);
+            osc.start(startTime);
+            osc.stop(startTime + duration + 0.04);
+          };
+
+          const playMusicStep = () => {
+            if (isMutedRef.current) {
+              stopSpyMusic();
+              return;
+            }
+
+            const state = musicStateRef.current;
+            const step = state.step % 16;
+            const now = ctx.currentTime + 0.04;
+
+            if (step % 2 === 0) {
+              const bass = bassPattern[Math.floor(step / 2) % bassPattern.length];
+              playTone(bass, now, 0.28, "sine", 0.18);
+              playTone(bass * 2, now + 0.01, 0.12, "triangle", 0.025);
+            }
+
+            if (leadPattern[step]) {
+              playTone(leadPattern[step], now + 0.04, 0.32, "triangle", 0.035);
+            }
+
+            if (step === 0 || step === 8) {
+              const chord = padChords[(state.step / 8) % padChords.length];
+              chord.forEach((note, index) => {
+                playTone(note, now + index * 0.015, 1.45, "sine", 0.012);
+              });
+            }
+
+            state.step += 1;
+          };
+
+          playMusicStep();
+          musicStateRef.current.intervalId = setInterval(playMusicStep, 250);
+        } catch (e) {}
+      };
+
       const playTick = (isFast) => {
         if (!audioCtxRef.current || isMutedRef.current) return;
         try {
@@ -139,7 +253,7 @@
           osc.frequency.setValueAtTime(isFast ? 800 : 400, ctx.currentTime);
 
           gain.gain.setValueAtTime(0, ctx.currentTime);
-          gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.01);
+          gain.gain.linearRampToValueAtTime(0.025, ctx.currentTime + 0.01);
           gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
 
           osc.start(ctx.currentTime);
@@ -159,6 +273,22 @@
       const toggleMute = () => {
         setIsMuted(!isMuted);
       };
+
+      useEffect(() => {
+        const silentScenes = ["cover", "start", "epilogue", "clear", "gameover"];
+        const shouldPlayMusic = !silentScenes.includes(scene) && !isMuted;
+
+        if (shouldPlayMusic) {
+          initAudio();
+          startSpyMusic();
+        } else {
+          stopSpyMusic();
+        }
+      }, [scene, isMuted]);
+
+      useEffect(() => {
+        return () => stopSpyMusic();
+      }, []);
 
       // 道具詳細資料 
       const itemDetails = {
