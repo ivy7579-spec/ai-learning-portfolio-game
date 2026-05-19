@@ -60,7 +60,7 @@
       locker: "assets/locker.png",
       system: "assets/system-room.png",
       desk: "assets/desk.png",
-      machineRoom: "assets/system-room.png",
+      machineRoom: "assets/machine-room.png",
       prepRoom: "assets/prep-room.avif",
       puzzleBoard: "assets/system-room.png", 
       finalBoss: "assets/final-boss.png"
@@ -938,7 +938,7 @@
         return (
           <div className="animate-in fade-in zoom-in-95 duration-300">
             <div className="bg-purple-900/20 border-2 border-purple-700/50 rounded-2xl p-6 md:p-8 shadow-2xl relative">
-              <h2 className="text-3xl font-black mb-6 text-purple-400">🎭 動機回溯室</h2>
+              <h2 className="text-3xl font-black mb-6 text-purple-400">🎭 監控中心</h2>
               
               <RoomImageDisplay roomId="prepRoom" />
 
@@ -1045,7 +1045,7 @@
                 { id: "system", icon: "💻", title: "AI審查系統", state: systemDecoded },
                 { id: "desk", icon: "🗄️", title: "教授辦公桌", state: deskSolved },
                 { id: "machineRoom", icon: "🖥️", title: "機房", state: machineSolved },
-                { id: "prepRoom", icon: "🎭", title: "動機回溯室", state: prepSolved }
+                { id: "prepRoom", icon: "🎭", title: "監控中心", state: prepSolved }
               ].map((room) => (
                 <button
                   key={room.id}
