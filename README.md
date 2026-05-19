@@ -1,7 +1,11 @@
 # AI 學習歷程密室
 
-這是一個以 AI 學習歷程審查為主題的互動密室遊戲。
+最新版遊戲連結：
 
-## 遊玩方式
+https://ivy7579-spec.github.io/ai-learning-portfolio-game/
 
-開啟 `index.html` 即可遊玩。圖片資源都放在 `assets` 資料夾中，適合直接部署到 GitHub Pages。
+## 檔案說明
+
+- `index.html` 是 GitHub Pages 公開遊戲入口。
+- `assets/` 存放遊戲使用的圖片素材。
+- `AI學習歷程密室0519.html` 是 2026-05-19 新版 HTML 原始檔。
