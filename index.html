@@ -231,6 +231,8 @@
       const minePositions = [1, 4, 8, 13, 16, 21, 25, 34];
       const evidenceLetters = ["E", "V", "I", "D", "E", "N", "C", "E"];
       const [markedMines, setMarkedMines] = useState([]);
+      const [revealedCells, setRevealedCells] = useState([]);
+      const [flagMode, setFlagMode] = useState(false);
       const [minePuzzleSolved, setMinePuzzleSolved] = useState(false);
       const [machineAnswer, setMachineAnswer] = useState("");
       const [machineSolved, setMachineSolved] = useState(false);
@@ -331,8 +333,8 @@
           solution: "在置物櫃拿到「紅色濾色片」後，點擊裝備，讀出備忘錄中留下的關鍵字，並輸入兩個中文字完成驗證。"
         },
         machineRoom: {
-          hint: "先取得學生置物櫃裡的未解碼磁片，再進入機房。請依照數字線索標記所有地雷格。",
-          solution: "地雷位置由左到右、由上到下會顯示 EVIDENCE；輸入 evidence 後即可取回證據磁片。"
+          hint: "先取得學生置物櫃裡的未解碼磁片，再進入機房。左鍵開安全格，右鍵或插旗模式標記可疑地雷。",
+          solution: "避開所有地雷並打開安全格後，地雷位置會顯示 EVIDENCE；輸入 evidence 後即可取回證據磁片。"
         },
         prepRoom: {
           hint: "點擊相鄰碎片交換位置，拼成一張完整的電路板背景，並讀出上面的句子。",
@@ -762,19 +764,71 @@
           }
           return count;
         };
-        const toggleMineMark = (idx) => {
-          if (!hasDisk || minePuzzleSolved || machineSolved) return;
-          setMarkedMines(prev => prev.includes(idx) ? prev.filter(item => item !== idx) : [...prev, idx]);
-        };
-        const verifyMines = () => {
-          const selected = [...markedMines].sort((a, b) => a - b).join(",");
-          const target = [...minePositions].sort((a, b) => a - b).join(",");
-          if (selected === target) {
+        const completeMinePuzzleIfReady = (nextRevealed, nextMarked) => {
+          const allSafeRevealed = Array.from({ length: 36 }).every((_, idx) => mineSet.has(idx) || nextRevealed.includes(idx));
+          const flagsMatchMines = nextMarked.length === minePositions.length && minePositions.every(idx => nextMarked.includes(idx));
+          if (allSafeRevealed || flagsMatchMines) {
             setMinePuzzleSolved(true);
-            showToast("地雷座標正確，磁片資料開始解碼。");
-          } else {
-            showToast("地雷座標錯誤。請依照周圍數字重新判斷。");
+            setMarkedMines([...minePositions]);
+            showToast("防護網解除，磁片資料開始解碼。");
           }
+        };
+        const resetMinePuzzle = () => {
+          setMarkedMines([]);
+          setRevealedCells([]);
+          setMachineAnswer("");
+          setMinePuzzleSolved(false);
+        };
+        const toggleMineMark = (idx) => {
+          if (!hasDisk || minePuzzleSolved || machineSolved || revealedCells.includes(idx)) return;
+          setMarkedMines(prev => {
+            const nextMarked = prev.includes(idx) ? prev.filter(item => item !== idx) : [...prev, idx];
+            completeMinePuzzleIfReady(revealedCells, nextMarked);
+            return nextMarked;
+          });
+        };
+        const getNeighborIndexes = (idx) => {
+          const row = Math.floor(idx / 6);
+          const col = idx % 6;
+          const neighbors = [];
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = row + dr;
+              const nc = col + dc;
+              if (nr >= 0 && nr < 6 && nc >= 0 && nc < 6) neighbors.push(nr * 6 + nc);
+            }
+          }
+          return neighbors;
+        };
+        const revealCell = (idx) => {
+          if (!hasDisk || minePuzzleSolved || machineSolved || markedMines.includes(idx) || revealedCells.includes(idx)) return;
+          if (mineSet.has(idx)) {
+            resetMinePuzzle();
+            showToast("踩到地雷！機房防護網已重啟。");
+            return;
+          }
+
+          const nextRevealed = new Set(revealedCells);
+          const queue = [idx];
+          while (queue.length) {
+            const current = queue.shift();
+            if (nextRevealed.has(current) || mineSet.has(current) || markedMines.includes(current)) continue;
+            nextRevealed.add(current);
+            if (getAdjacentMineCount(current) === 0) {
+              getNeighborIndexes(current).forEach(neighbor => {
+                if (!nextRevealed.has(neighbor) && !mineSet.has(neighbor)) queue.push(neighbor);
+              });
+            }
+          }
+
+          const revealedList = [...nextRevealed];
+          setRevealedCells(revealedList);
+          completeMinePuzzleIfReady(revealedList, markedMines);
+        };
+        const handleMineCellClick = (idx) => {
+          if (flagMode) toggleMineMark(idx);
+          else revealCell(idx);
         };
         const completeMachineRoom = () => {
           if (machineAnswer.trim().toLowerCase() === "evidence") {
@@ -815,23 +869,30 @@
                           {Array.from({ length: 36 }).map((_, idx) => {
                             const isMine = mineSet.has(idx);
                             const isMarked = markedMines.includes(idx);
+                            const isRevealed = revealedCells.includes(idx);
                             const letterIndex = minePositions.indexOf(idx);
                             const clueCount = getAdjacentMineCount(idx);
                             return (
                               <button
                                 key={idx}
-                                onClick={() => toggleMineMark(idx)}
+                                onClick={() => handleMineCellClick(idx)}
+                                onContextMenu={(e) => {
+                                  e.preventDefault();
+                                  toggleMineMark(idx);
+                                }}
                                 disabled={minePuzzleSolved || machineSolved}
                                 className={`aspect-square rounded-lg border text-lg md:text-xl font-black transition-all flex items-center justify-center ${
                                   minePuzzleSolved && isMine
                                     ? 'bg-cyan-400 text-black border-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.75)]'
                                     : isMarked
                                       ? 'bg-red-600/80 text-white border-red-300 shadow-[0_0_12px_rgba(248,113,113,0.45)]'
-                                      : 'bg-slate-900 text-cyan-200 border-slate-700 hover:border-cyan-400 hover:bg-slate-800'
+                                      : isRevealed
+                                        ? 'bg-slate-200 text-slate-900 border-slate-400 shadow-inner'
+                                        : 'bg-slate-900 text-cyan-200 border-slate-700 hover:border-cyan-400 hover:bg-slate-800'
                                 }`}
                                 title={`第 ${Math.floor(idx / 6) + 1} 列，第 ${(idx % 6) + 1} 行`}
                               >
-                                {minePuzzleSolved && isMine ? evidenceLetters[letterIndex] : isMarked ? "◆" : clueCount || ""}
+                                {minePuzzleSolved && isMine ? evidenceLetters[letterIndex] : isMarked ? "🚩" : isRevealed ? (clueCount || "") : ""}
                               </button>
                             );
                           })}
@@ -843,21 +904,32 @@
                           <span className="text-3xl">💽</span>
                           <div>
                             <h3 className="text-cyan-300 font-bold">磁片已插入</h3>
-                            <p className="text-xs text-slate-400">已標記 {markedMines.length} / {minePositions.length} 個地雷</p>
+                            <p className="text-xs text-slate-400">已插旗 {markedMines.length} / {minePositions.length}，已打開 {revealedCells.length} 格</p>
                           </div>
                         </div>
 
                         {!minePuzzleSolved ? (
                           <React.Fragment>
                             <p className="text-slate-300 text-sm leading-relaxed mb-4">
-                              數字代表周圍 8 格中有幾個地雷。點擊格子標記地雷，全部標對後執行驗證。
+                              左鍵打開格子，右鍵插旗；手機可先開啟插旗模式。打開安全格後才會顯示周圍 8 格的地雷數，踩到地雷會重啟這局。
                             </p>
-                            <button
-                              onClick={verifyMines}
-                              className="w-full px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-black rounded-xl transition-all"
-                            >
-                              驗證地雷座標
-                            </button>
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                onClick={() => setFlagMode(!flagMode)}
+                                className={`px-4 py-3 font-black rounded-xl transition-all ${flagMode ? 'bg-red-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-cyan-200 border border-cyan-800'}`}
+                              >
+                                {flagMode ? "插旗模式中" : "插旗模式"}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  resetMinePuzzle();
+                                  showToast("機房踩地雷已重啟。");
+                                }}
+                                className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold rounded-xl transition-all"
+                              >
+                                重啟本局
+                              </button>
+                            </div>
                           </React.Fragment>
                         ) : (
                           <div className="animate-in fade-in">
