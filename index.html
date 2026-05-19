@@ -60,6 +60,7 @@
       locker: "assets/locker.png",
       system: "assets/system-room.png",
       desk: "assets/desk.png",
+      machineRoom: "assets/system-room.png",
       prepRoom: "assets/prep-room.avif",
       puzzleBoard: "assets/system-room.png", 
       finalBoss: "assets/final-boss.png"
@@ -172,12 +173,19 @@
           desc: "半透明的紅色塑膠板，可以過濾掉紅色的光線。",
           clue: "普通的濾色片，似乎可以用在某個充滿紅色雜訊的場景。"
         },
+        disk: {
+          id: "disk",
+          icon: "💽",
+          name: "未解碼磁片",
+          desc: "從學生置物櫃取得的磁片，資料區被機房防護程式鎖住。",
+          clue: "磁片正面貼著標籤：請插入機房主控電腦，完成地雷座標驗證。"
+        },
         evidence: {
           id: "evidence",
-          icon: "💾",
-          name: "隨身碟：【證據】",
-          desc: "儲存著學生真實經歷佐證資料的隨身碟。",
-          clue: "🔍 隨身碟金屬接頭的背面，刻著一個字根：【具 】"
+          icon: "💽",
+          name: "磁片：【證據】",
+          desc: "已從機房安全取回的證據磁片，裡面保存著學生真實經歷的佐證資料。",
+          clue: "🔍 翻至磁片背面，顯示一個字根：【 具 】"
         },
         growth: {
           id: "growth",
@@ -219,6 +227,13 @@
       const [filterActive, setFilterActive] = useState(false);
       const [deskSolved, setDeskSolved] = useState(false);
       const [deskAnswer, setDeskAnswer] = useState("");
+
+      const minePositions = [1, 4, 8, 13, 16, 21, 25, 34];
+      const evidenceLetters = ["E", "V", "I", "D", "E", "N", "C", "E"];
+      const [markedMines, setMarkedMines] = useState([]);
+      const [minePuzzleSolved, setMinePuzzleSolved] = useState(false);
+      const [machineAnswer, setMachineAnswer] = useState("");
+      const [machineSolved, setMachineSolved] = useState(false);
 
       const initialPuzzle = [4, 1, 8, 2, 7, 0, 5, 3, 6];
       const [puzzlePieces, setPuzzlePieces] = useState(initialPuzzle);
@@ -296,8 +311,8 @@
       // --- 提示與解答資料庫 ---
       const hintData = {
         main: {
-          hint: "大廳有 5 個區域可以搜查。解開所有謎題取得 4 個核心模組與密碼報告後，才能解鎖下方的終極防火牆喔！",
-          solution: "分別完成檔案櫃、置物櫃、審查系統、辦公桌、面試室。防火牆解答依序為：【動機】、【證據】、【成長】、【反思】。"
+          hint: "大廳有 6 個區域可以搜查。解開所有謎題取得 4 個核心模組與密碼報告後，才能解鎖下方的終極防火牆喔！",
+          solution: "分別完成檔案櫃、置物櫃、審查系統、辦公桌、機房、面試室。防火牆解答依序為：【動機】、【證據】、【成長】、【反思】。"
         },
         archive: {
           hint: "仔細對照左側的退件守則！檔案A只有獎狀；檔案B沒附截圖；檔案C心得太表面；檔案D文不對題。",
@@ -305,7 +320,7 @@
         },
         locker: {
           hint: "這是一個數獨謎題，每一行、每一列數字 1、2、3 都只能出現一次且不能重複。",
-          solution: "第一排: 1、3、2；第二排: 3、2、1；第三排: 2、1、3。"
+          solution: "第一排: 1、3、2；第二排: 3、2、1；第三排: 2、1、3。解開後可取得紅色濾色片與未解碼磁片。"
         },
         system: {
           hint: "PIN 碼在「退件檔案櫃」拿到的交叉比對報告背後。圖形解碼是植物從小到大的改變過程。",
@@ -314,6 +329,10 @@
         desk: {
           hint: "需要能過濾紅光的道具，先去「學生置物櫃」解開數獨找找看！",
           solution: "在置物櫃拿到「紅色濾色片」後，點擊裝備，讀出備忘錄中留下的關鍵字，並輸入兩個中文字完成驗證。"
+        },
+        machineRoom: {
+          hint: "先取得學生置物櫃裡的未解碼磁片，再進入機房。請依照數字線索標記所有地雷格。",
+          solution: "地雷位置由左到右、由上到下會顯示 EVIDENCE；輸入 evidence 後即可取回證據磁片。"
         },
         prepRoom: {
           hint: "點擊相鄰碎片交換位置，拼成一張完整的電路板背景，並讀出上面的句子。",
@@ -403,7 +422,7 @@
             <span className="text-2xl">🎒</span>
             <div>
               <h3 className="text-sm font-bold text-slate-300">特務道具欄</h3>
-              <div className="text-xs text-cyan-400 font-mono">收集進度: {inventory.length}/6</div>
+              <div className="text-xs text-cyan-400 font-mono">收集進度: {inventory.filter(id => id !== "disk").length}/6</div>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 flex-1">
@@ -513,7 +532,7 @@
         };
         const verifySudoku = () => {
           if (JSON.stringify(sudokuGrid) === JSON.stringify(targetSudoku)) {
-            setLockerUnlocked(true); addToInventory("filter"); addToInventory("evidence");
+            setLockerUnlocked(true); addToInventory("filter"); addToInventory("disk");
             showToast("喀嚓！邏輯關聯正確，鎖頭解開了。");
           } else {
             showToast("錯誤！每行、每列的數字都不可以重複。");
@@ -554,10 +573,10 @@
                   <h3 className="text-2xl font-bold text-green-400 mb-4">矩陣鎖已解開！</h3>
                   <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <div className="bg-red-900/40 border border-red-500 text-red-200 px-4 py-3 rounded-lg">獲得：🟥 紅色濾色片</div>
-                    <div className="bg-blue-900/40 border border-blue-500 text-blue-200 px-4 py-3 rounded-lg">獲得：💾 隨身碟【證據】</div>
+                    <div className="bg-blue-900/40 border border-blue-500 text-blue-200 px-4 py-3 rounded-lg">獲得：💽 未解碼磁片</div>
                   </div>
                   <div className="inline-block bg-slate-900/80 border border-yellow-500 text-yellow-300 px-6 py-3 rounded-xl text-lg mt-6 font-bold shadow-lg">
-                    🔍 隨身碟背面刻著一個字根：【 具 】
+                    磁片資料被鎖住了，必須插入機房主控電腦才能讀取。
                   </div>
                 </div>
               )}
@@ -726,6 +745,169 @@
         </div>
       );
 
+      const renderMachineRoom = () => {
+        const hasDisk = inventory.includes("disk");
+        const mineSet = new Set(minePositions);
+        const getAdjacentMineCount = (idx) => {
+          const row = Math.floor(idx / 6);
+          const col = idx % 6;
+          let count = 0;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (dr === 0 && dc === 0) continue;
+              const nr = row + dr;
+              const nc = col + dc;
+              if (nr >= 0 && nr < 6 && nc >= 0 && nc < 6 && mineSet.has(nr * 6 + nc)) count++;
+            }
+          }
+          return count;
+        };
+        const toggleMineMark = (idx) => {
+          if (!hasDisk || minePuzzleSolved || machineSolved) return;
+          setMarkedMines(prev => prev.includes(idx) ? prev.filter(item => item !== idx) : [...prev, idx]);
+        };
+        const verifyMines = () => {
+          const selected = [...markedMines].sort((a, b) => a - b).join(",");
+          const target = [...minePositions].sort((a, b) => a - b).join(",");
+          if (selected === target) {
+            setMinePuzzleSolved(true);
+            showToast("地雷座標正確，磁片資料開始解碼。");
+          } else {
+            showToast("地雷座標錯誤。請依照周圍數字重新判斷。");
+          }
+        };
+        const completeMachineRoom = () => {
+          if (machineAnswer.trim().toLowerCase() === "evidence") {
+            setMachineSolved(true);
+            setInventory(prev => {
+              const withoutDisk = prev.filter(id => id !== "disk");
+              return withoutDisk.includes("evidence") ? withoutDisk : [...withoutDisk, "evidence"];
+            });
+            showToast("證據磁片已安全取回。");
+          } else {
+            showToast("單字驗證失敗。請輸入地雷格顯示的英文單字。");
+          }
+        };
+
+        return (
+          <div className="animate-in fade-in zoom-in-95 duration-300">
+            <div className="bg-cyan-950/20 border-2 border-cyan-700/50 rounded-2xl p-6 md:p-8 shadow-2xl relative">
+              <h2 className="text-3xl font-black mb-6 text-cyan-300">🖥️ 機房：磁片資料解碼</h2>
+              <RoomImageDisplay roomId="machineRoom" />
+              
+              {!machineSolved ? (
+                <div>
+                  <p className="text-cyan-100 mb-6 leading-relaxed">
+                    主控電腦要求插入學生置物櫃取得的磁片。螢幕上出現 6x6 地雷防護網，
+                    只有正確標記所有地雷位置，磁片中的證據資料才會解鎖。
+                  </p>
+
+                  {!hasDisk ? (
+                    <div className="bg-slate-900/80 border border-slate-600 text-slate-300 rounded-2xl p-8 text-center">
+                      <div className="text-5xl mb-4">💽</div>
+                      <h3 className="text-xl font-bold mb-2 text-cyan-300">尚未插入磁片</h3>
+                      <p>先回到學生置物櫃取得未解碼磁片，再回機房操作主控電腦。</p>
+                    </div>
+                  ) : (
+                    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+                      <div className="bg-black/50 border border-cyan-800 rounded-2xl p-4 md:p-5">
+                        <div className="grid grid-cols-6 gap-2 max-w-[520px] mx-auto">
+                          {Array.from({ length: 36 }).map((_, idx) => {
+                            const isMine = mineSet.has(idx);
+                            const isMarked = markedMines.includes(idx);
+                            const letterIndex = minePositions.indexOf(idx);
+                            const clueCount = getAdjacentMineCount(idx);
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => toggleMineMark(idx)}
+                                disabled={minePuzzleSolved || machineSolved}
+                                className={`aspect-square rounded-lg border text-lg md:text-xl font-black transition-all flex items-center justify-center ${
+                                  minePuzzleSolved && isMine
+                                    ? 'bg-cyan-400 text-black border-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.75)]'
+                                    : isMarked
+                                      ? 'bg-red-600/80 text-white border-red-300 shadow-[0_0_12px_rgba(248,113,113,0.45)]'
+                                      : 'bg-slate-900 text-cyan-200 border-slate-700 hover:border-cyan-400 hover:bg-slate-800'
+                                }`}
+                                title={`第 ${Math.floor(idx / 6) + 1} 列，第 ${(idx % 6) + 1} 行`}
+                              >
+                                {minePuzzleSolved && isMine ? evidenceLetters[letterIndex] : isMarked ? "◆" : clueCount || ""}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950/80 border border-cyan-800 rounded-2xl p-5">
+                        <div className="flex items-center gap-3 mb-4">
+                          <span className="text-3xl">💽</span>
+                          <div>
+                            <h3 className="text-cyan-300 font-bold">磁片已插入</h3>
+                            <p className="text-xs text-slate-400">已標記 {markedMines.length} / {minePositions.length} 個地雷</p>
+                          </div>
+                        </div>
+
+                        {!minePuzzleSolved ? (
+                          <React.Fragment>
+                            <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                              數字代表周圍 8 格中有幾個地雷。點擊格子標記地雷，全部標對後執行驗證。
+                            </p>
+                            <button
+                              onClick={verifyMines}
+                              className="w-full px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-black rounded-xl transition-all"
+                            >
+                              驗證地雷座標
+                            </button>
+                          </React.Fragment>
+                        ) : (
+                          <div className="animate-in fade-in">
+                            <p className="text-cyan-200 text-sm leading-relaxed mb-4">
+                              地雷位置已轉譯為英文單字。請輸入地雷格顯示的單字，完成磁片退出程序。
+                            </p>
+                            <input
+                              type="text"
+                              value={machineAnswer}
+                              onChange={(e) => setMachineAnswer(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') completeMachineRoom();
+                              }}
+                              placeholder="輸入英文單字"
+                              className="w-full bg-black border border-cyan-500/60 text-cyan-100 px-5 py-3 rounded-xl outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-300 text-lg text-center placeholder:text-cyan-200/40 mb-3"
+                            />
+                            <button
+                              onClick={completeMachineRoom}
+                              className="w-full px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-black rounded-xl transition-all"
+                            >
+                              取出證據磁片
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-8 text-center animate-in zoom-in">
+                  <div className="text-6xl mb-4">💽</div>
+                  <h3 className="text-2xl font-bold text-cyan-300 mb-4">證據磁片已解碼</h3>
+                  <div className="inline-block bg-cyan-950/50 border border-cyan-500 text-cyan-100 px-6 py-4 rounded-xl text-lg text-left">
+                    獲得：💽 磁片：【證據】<br/>
+                    <div className="mt-3 pt-3 border-t border-cyan-700 text-yellow-300 font-bold">
+                      🔍 翻至磁片背面，顯示一個字根：【 具 】
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-8 flex justify-center">
+              <button onClick={() => setScene("main")} className="px-8 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-400 font-bold rounded-full transition-all shadow-lg">
+                ← 返回遊戲大廳
+              </button>
+            </div>
+          </div>
+        );
+      };
+
       const renderPrepRoom = () => {
         const handlePuzzleClick = (idx) => {
           if (isPuzzleSolved || prepSolved) return;
@@ -862,6 +1044,7 @@
                 { id: "locker", icon: "🎒", title: "學生置物櫃", state: lockerUnlocked },
                 { id: "system", icon: "💻", title: "AI審查系統", state: systemDecoded },
                 { id: "desk", icon: "🗄️", title: "教授辦公桌", state: deskSolved },
+                { id: "machineRoom", icon: "🖥️", title: "機房", state: machineSolved },
                 { id: "prepRoom", icon: "🎭", title: "動機回溯室", state: prepSolved }
               ].map((room) => (
                 <button
@@ -1174,6 +1357,7 @@
                 {scene === "locker" && renderLocker()}
                 {scene === "system" && renderSystem()}
                 {scene === "desk" && renderDesk()}
+                {scene === "machineRoom" && renderMachineRoom()}
                 {scene === "prepRoom" && renderPrepRoom()}
                 {scene === "finalBoss" && renderFinalBoss()}
                 {scene === "epilogue" && renderEpilogue()}
