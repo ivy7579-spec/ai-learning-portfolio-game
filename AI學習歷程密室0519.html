@@ -109,7 +109,7 @@
 
       // --- 音效系統 (Web Audio API 配樂與滴答聲) ---
       const audioCtxRef = useRef(null);
-      const musicStateRef = useRef({ intervalId: null, step: 0, master: null });
+      const musicStateRef = useRef({ intervalId: null, step: 0, master: null, drones: [] });
       const isMutedRef = useRef(false);
       const [isMuted, setIsMuted] = useState(false);
 
@@ -132,6 +132,15 @@
           clearInterval(state.intervalId);
           state.intervalId = null;
         }
+        state.drones.forEach(({ osc, gain }) => {
+          try {
+            const ctx = audioCtxRef.current;
+            gain.gain.cancelScheduledValues(ctx.currentTime);
+            gain.gain.setTargetAtTime(0, ctx.currentTime, 0.12);
+            osc.stop(ctx.currentTime + 0.35);
+          } catch (e) {}
+        });
+        state.drones = [];
         if (state.master) {
           try {
             const ctx = audioCtxRef.current;
@@ -153,34 +162,58 @@
           const ctx = audioCtxRef.current;
           const master = ctx.createGain();
           const lowpass = ctx.createBiquadFilter();
+          const compressor = ctx.createDynamicsCompressor();
           const delay = ctx.createDelay();
           const delayGain = ctx.createGain();
 
           master.gain.setValueAtTime(0.0001, ctx.currentTime);
-          master.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 1.2);
+          master.gain.exponentialRampToValueAtTime(0.16, ctx.currentTime + 0.8);
 
           lowpass.type = "lowpass";
-          lowpass.frequency.setValueAtTime(1800, ctx.currentTime);
-          lowpass.Q.setValueAtTime(0.6, ctx.currentTime);
+          lowpass.frequency.setValueAtTime(2400, ctx.currentTime);
+          lowpass.Q.setValueAtTime(0.75, ctx.currentTime);
+
+          compressor.threshold.setValueAtTime(-24, ctx.currentTime);
+          compressor.knee.setValueAtTime(18, ctx.currentTime);
+          compressor.ratio.setValueAtTime(4, ctx.currentTime);
+          compressor.attack.setValueAtTime(0.02, ctx.currentTime);
+          compressor.release.setValueAtTime(0.25, ctx.currentTime);
 
           delay.delayTime.setValueAtTime(0.22, ctx.currentTime);
-          delayGain.gain.setValueAtTime(0.08, ctx.currentTime);
+          delayGain.gain.setValueAtTime(0.12, ctx.currentTime);
 
           master.connect(lowpass);
-          lowpass.connect(ctx.destination);
-          lowpass.connect(delay);
+          lowpass.connect(compressor);
+          compressor.connect(ctx.destination);
+          compressor.connect(delay);
           delay.connect(delayGain);
           delayGain.connect(ctx.destination);
 
           musicStateRef.current.master = master;
 
-          const bassPattern = [110, 110, 130.81, 123.47, 110, 98, 103.83, 110];
+          const createDrone = (frequency, gainLevel, type = "sine") => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+            gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(gainLevel, ctx.currentTime + 1.5);
+            osc.connect(gain);
+            gain.connect(master);
+            osc.start();
+            musicStateRef.current.drones.push({ osc, gain });
+          };
+
+          createDrone(55, 0.08);
+          createDrone(82.41, 0.035, "triangle");
+
+          const bassPattern = [110, 110, 130.81, 123.47, 110, 98, 103.83, 92.5];
           const leadPattern = {
-            2: 440,
-            4: 392,
+            1: 440,
+            3: 392,
             6: 415.3,
-            10: 329.63,
-            12: 349.23,
+            9: 349.23,
+            11: 329.63,
             14: 311.13
           };
           const padChords = [
@@ -196,12 +229,12 @@
             osc.type = type;
             osc.frequency.setValueAtTime(frequency, startTime);
             gain.gain.setValueAtTime(0.0001, startTime);
-            gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.03);
-            gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+            gain.gain.exponentialRampToValueAtTime(peak, startTime + 0.025);
+            gain.gain.setTargetAtTime(0.0001, startTime + duration * 0.55, duration * 0.22);
             osc.connect(gain);
             gain.connect(destination);
             osc.start(startTime);
-            osc.stop(startTime + duration + 0.04);
+            osc.stop(startTime + duration + 0.12);
           };
 
           const playMusicStep = () => {
@@ -216,18 +249,18 @@
 
             if (step % 2 === 0) {
               const bass = bassPattern[Math.floor(step / 2) % bassPattern.length];
-              playTone(bass, now, 0.28, "sine", 0.18);
-              playTone(bass * 2, now + 0.01, 0.12, "triangle", 0.025);
+              playTone(bass, now, 0.34, "sine", 0.32);
+              playTone(bass * 2, now + 0.01, 0.18, "triangle", 0.06);
             }
 
             if (leadPattern[step]) {
-              playTone(leadPattern[step], now + 0.04, 0.32, "triangle", 0.035);
+              playTone(leadPattern[step], now + 0.03, 0.42, "triangle", 0.13);
             }
 
             if (step === 0 || step === 8) {
               const chord = padChords[(state.step / 8) % padChords.length];
               chord.forEach((note, index) => {
-                playTone(note, now + index * 0.015, 1.45, "sine", 0.012);
+                playTone(note, now + index * 0.015, 1.65, "sine", 0.04);
               });
             }
 
@@ -263,8 +296,9 @@
 
       const handleStartGame = () => {
         if (playerName.trim()) {
-          setScene("main");
           initAudio();
+          startSpyMusic();
+          setScene("main");
         } else {
           showToast("請輸入特務代號！");
         }
