@@ -85,7 +85,7 @@
 
     function App() {
       // --- 遊戲全域狀態 ---
-      const [scene, setScene] = useState("start"); 
+      const [scene, setScene] = useState("cover"); 
       const sceneRef = useRef(scene);
       const [timeLeft, setTimeLeft] = useState(1200); 
       const [inventory, setInventory] = useState([]); 
@@ -251,7 +251,7 @@
       useEffect(() => {
         const timer = setInterval(() => {
           const currentScene = sceneRef.current;
-          if (currentScene === "start" || currentScene === "epilogue" || currentScene === "clear" || currentScene === "gameover") return;
+          if (currentScene === "cover" || currentScene === "start" || currentScene === "epilogue" || currentScene === "clear" || currentScene === "gameover") return;
           
           setTimeLeft((prev) => {
             if (prev <= 1) {
@@ -267,7 +267,7 @@
       // --- 根據 timeLeft 播放滴答聲 ---
       useEffect(() => {
         const currentScene = sceneRef.current;
-        if (currentScene === "start" || currentScene === "epilogue" || currentScene === "clear" || currentScene === "gameover") return;
+        if (currentScene === "cover" || currentScene === "start" || currentScene === "epilogue" || currentScene === "clear" || currentScene === "gameover") return;
         if (timeLeft <= 0) return;
 
         const isFast = timeLeft <= 300; 
@@ -1006,6 +1006,31 @@
         </div>
       );
 
+      const renderCoverScreen = () => (
+        <div
+          className="min-h-screen relative overflow-hidden bg-slate-950"
+          tabIndex="0"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') setScene("start");
+          }}
+        >
+          <img
+            src={staticRoomImages.cover}
+            alt="AI 學習歷程密室遊戲封面"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-slate-950/10"></div>
+          <div className="relative z-10 min-h-screen flex items-end justify-center px-5 pb-10 md:pb-14">
+            <button
+              onClick={() => setScene("start")}
+              className="w-full max-w-sm px-8 py-4 bg-cyan-500/90 hover:bg-cyan-300 text-slate-950 font-black text-xl rounded-xl border border-cyan-100 shadow-[0_0_35px_rgba(34,211,238,0.7)] transition-all hover:scale-[1.03] active:scale-[0.99]"
+            >
+              開始任務
+            </button>
+          </div>
+        </div>
+      );
+
       const renderStartScreen = () => (
         <div 
           className="flex flex-col items-center justify-center min-h-screen relative overflow-hidden"
@@ -1051,7 +1076,7 @@
 
       return (
         <React.Fragment>
-          {scene !== "start" && scene !== "epilogue" && scene !== "clear" && scene !== "gameover" && (
+          {scene !== "cover" && scene !== "start" && scene !== "epilogue" && scene !== "clear" && scene !== "gameover" && (
             <div className="fixed top-4 right-4 z-[150] flex flex-col gap-3">
               <button 
                 onClick={toggleMute} 
@@ -1070,13 +1095,15 @@
             </div>
           )}
 
-          {scene === "start" ? (
+          {scene === "cover" ? (
+            renderCoverScreen()
+          ) : scene === "start" ? (
             renderStartScreen()
           ) : (
             <div className="min-h-screen max-w-full bg-slate-950 text-white p-4 md:p-8 font-sans selection:bg-cyan-500/30 relative">
               <div className="max-w-5xl mx-auto relative z-10">
                 
-                {(scene !== "clear" && scene !== "gameover" && scene !== "epilogue") && (
+                {(scene !== "cover" && scene !== "clear" && scene !== "gameover" && scene !== "epilogue") && (
                   <div className="flex flex-col md:flex-row md:justify-between gap-6 mb-6 border-b border-white/10 pb-6">
                     <div>
                       <h1 className="text-4xl md:text-5xl font-black text-cyan-400 mb-2">
@@ -1108,7 +1135,7 @@
                 {scene === "finalBoss" && renderFinalBoss()}
                 {scene === "epilogue" && renderEpilogue()}
 
-                {(scene !== "start" && scene !== "clear" && scene !== "gameover" && scene !== "epilogue") && renderInventoryBar()}
+                {(scene !== "cover" && scene !== "start" && scene !== "clear" && scene !== "gameover" && scene !== "epilogue") && renderInventoryBar()}
 
                 {inspectingItem && (
                   <div 
