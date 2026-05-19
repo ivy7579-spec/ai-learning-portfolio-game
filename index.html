@@ -218,6 +218,7 @@
       
       const [filterActive, setFilterActive] = useState(false);
       const [deskSolved, setDeskSolved] = useState(false);
+      const [deskAnswer, setDeskAnswer] = useState("");
 
       const initialPuzzle = [4, 1, 8, 2, 7, 0, 5, 3, 6];
       const [puzzlePieces, setPuzzlePieces] = useState(initialPuzzle);
@@ -312,7 +313,7 @@
         },
         desk: {
           hint: "需要能過濾紅光的道具，先去「學生置物櫃」解開數獨找找看！",
-          solution: "在置物櫃拿到「紅色濾色片」後，點擊裝備，接著點擊提取線索。"
+          solution: "在置物櫃拿到「紅色濾色片」後，點擊裝備，讀出備忘錄中留下的關鍵字，並輸入兩個中文字完成驗證。"
         },
         prepRoom: {
           hint: "點擊相鄰碎片交換位置，拼成一張完整的電路板背景，並讀出上面的句子。",
@@ -633,22 +634,43 @@
             {!deskSolved ? (
               <div>
                 <p className="text-amber-200 mb-6">桌上有一份加密的備忘錄，上面佈滿了干擾的紅色亂碼，完全無法閱讀。</p>
-                <div className={`p-8 bg-yellow-50 rounded shadow-inner mb-8 transition-colors duration-1000 ${filterActive ? 'bg-red-900/90 shadow-[inset_0_0_50px_rgba(220,38,38,0.8)]' : ''}`}>
-                  <div className="text-2xl font-black tracking-widest leading-loose text-center">
+                <div className={`relative p-8 bg-yellow-50 rounded shadow-inner mb-8 transition-colors duration-1000 overflow-hidden min-h-[260px] ${filterActive ? 'bg-red-900/90 shadow-[inset_0_0_50px_rgba(220,38,38,0.8)]' : ''}`}>
+                  <div className={`absolute inset-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-3 text-2xl md:text-3xl font-black tracking-widest leading-loose transition-opacity duration-700 pointer-events-none select-none ${filterActive ? 'opacity-0' : 'opacity-95'}`}>
+                    <span className="text-red-500 rotate-[-8deg]">排名</span>
+                    <span className="text-fuchsia-600 rotate-[6deg]">退件</span>
+                    <span className="text-orange-500 rotate-[-3deg]">數據</span>
+                    <span className="text-rose-500 rotate-[10deg]">證照</span>
+                    <span className="text-violet-600 rotate-[-6deg]">分數</span>
+                    <span className="text-red-600 rotate-[4deg]">套版</span>
+                    <span className="text-pink-500 rotate-[-10deg]">漂亮</span>
+                    <span className="text-amber-500 rotate-[7deg]">活動</span>
+                    <span className="text-sky-600 rotate-[-4deg]">比賽</span>
+                    <span className="text-red-500 rotate-[9deg]">退件</span>
+                    <span className="text-lime-600 rotate-[-7deg]">量化</span>
+                    <span className="text-purple-600 rotate-[5deg]">模板</span>
+                    <span className="text-orange-600 rotate-[-5deg]">獎狀</span>
+                    <span className="text-red-600 rotate-[3deg]">審查</span>
+                    <span className="text-fuchsia-500 rotate-[-9deg]">標準答案</span>
+                  </div>
+                  <div className="relative z-10 text-2xl font-black tracking-widest leading-loose text-center">
                     {['一', '份', '好', '的', '學', '習', '歷', '程', '，', '最', '重', '要', '的', '是', '：', '【'].map((char, i) => (
-                      <span key={i} className={filterActive ? 'text-black' : 'text-slate-800'}>{char}</span>
+                      <span key={i} className={filterActive ? 'text-black/70' : 'text-slate-800'}>{char}</span>
                     ))}
                     <span className={`transition-opacity duration-1000 ${filterActive ? 'text-white font-bold bg-black px-2' : 'text-slate-800'}`}>反</span>
                     <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-red-500 font-bold px-1'}`}>營</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-red-500 font-bold px-1'}`}>隊</span>
+                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-fuchsia-600 font-bold px-1'}`}>隊</span>
+                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-orange-500 font-bold px-1'}`}>排</span>
+                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-sky-600 font-bold px-1'}`}>名</span>
                     <span className={`transition-opacity duration-1000 ${filterActive ? 'text-white font-bold bg-black px-2' : 'text-slate-800'}`}>思</span>
                     <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-red-500 font-bold px-1'}`}>好</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-red-500 font-bold px-1'}`}>多</span>
-                    <span className={filterActive ? 'text-black' : 'text-slate-800'}>】。</span>
+                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-lime-600 font-bold px-1'}`}>多</span>
+                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-purple-600 font-bold px-1'}`}>獎</span>
+                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-rose-500 font-bold px-1'}`}>狀</span>
+                    <span className={filterActive ? 'text-black/70' : 'text-slate-800'}>】。</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <button onClick={() => {
                     if (inventory.includes("filter")) setFilterActive(!filterActive);
                     else showToast("你無法直接閱讀。你需要能過濾紅色字體的道具 (提示：去置物櫃找找)。");
@@ -656,9 +678,30 @@
                     {filterActive ? "取下紅色濾色片" : "裝備：紅色濾色片"}
                   </button>
                   {filterActive && (
-                    <button onClick={() => { setDeskSolved(true); addToInventory("reflection"); }} className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl animate-in slide-in-from-left-4">
-                      提取線索
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 flex-1 animate-in slide-in-from-left-4">
+                      <input
+                        type="text"
+                        value={deskAnswer}
+                        onChange={(e) => setDeskAnswer(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            if (deskAnswer.trim() === "反思") { setDeskSolved(true); addToInventory("reflection"); }
+                            else showToast("驗證失敗。請輸入濾色片顯示出的兩個中文字。");
+                          }
+                        }}
+                        placeholder="輸入濾色片顯示的兩個中文字"
+                        className="flex-1 bg-black/70 border border-amber-500/60 text-amber-100 px-5 py-3 rounded-xl outline-none focus:border-amber-300 focus:ring-1 focus:ring-amber-300 text-lg text-center placeholder:text-amber-200/40"
+                      />
+                      <button
+                        onClick={() => {
+                          if (deskAnswer.trim() === "反思") { setDeskSolved(true); addToInventory("reflection"); }
+                          else showToast("驗證失敗。請輸入濾色片顯示出的兩個中文字。");
+                        }}
+                        className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl whitespace-nowrap transition-all"
+                      >
+                        驗證反思
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
