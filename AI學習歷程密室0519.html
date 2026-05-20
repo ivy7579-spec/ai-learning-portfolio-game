@@ -97,11 +97,21 @@
       const [showHintModal, setShowHintModal] = useState(false); 
       const [playerName, setPlayerName] = useState(""); 
       const [quoteIndex, setQuoteIndex] = useState(0); 
+      const [certificateImage, setCertificateImage] = useState("");
+      const [feedbackText, setFeedbackText] = useState("");
+      const [feedbackEntries, setFeedbackEntries] = useState([]);
       
       // 同步 scene 到 useRef
       useEffect(() => {
         sceneRef.current = scene;
       }, [scene]);
+
+      useEffect(() => {
+        try {
+          const savedEntries = JSON.parse(localStorage.getItem("aiPortfolioFeedbackEntries") || "[]");
+          if (Array.isArray(savedEntries)) setFeedbackEntries(savedEntries);
+        } catch (e) {}
+      }, []);
 
       // --- 100 分總分系統與提示解鎖狀態 ---
       const [score, setScore] = useState(100);
@@ -402,6 +412,7 @@
       const [revealedCells, setRevealedCells] = useState([]);
       const [explodedMine, setExplodedMine] = useState(null);
       const [flagMode, setFlagMode] = useState(false);
+      const [diskInserted, setDiskInserted] = useState(false);
       const [minePuzzleSolved, setMinePuzzleSolved] = useState(false);
       const [machineAnswer, setMachineAnswer] = useState("");
       const [machineSolved, setMachineSolved] = useState(false);
@@ -841,6 +852,16 @@
                     <span className="text-orange-600 rotate-[-5deg]">獎狀</span>
                     <span className="text-red-600 rotate-[3deg]">審查</span>
                     <span className="text-fuchsia-500 rotate-[-9deg]">標準答案</span>
+                    <span className="text-red-500 rotate-[11deg]">履歷包裝</span>
+                    <span className="text-orange-500 rotate-[-12deg]">完美人設</span>
+                    <span className="text-pink-600 rotate-[8deg]">空泛心得</span>
+                    <span className="text-lime-600 rotate-[-4deg]">校外經歷</span>
+                    <span className="text-sky-600 rotate-[5deg]">競賽成果</span>
+                    <span className="text-violet-600 rotate-[-8deg]">大量活動</span>
+                    <span className="text-red-600 rotate-[6deg]">漂亮格式</span>
+                    <span className="text-amber-600 rotate-[-6deg]">名次優先</span>
+                    <span className="text-rose-600 rotate-[12deg]">模板化</span>
+                    <span className="text-fuchsia-600 rotate-[-11deg]">加分項目</span>
                   </div>
                   <div className="relative z-10 text-2xl font-black tracking-widest leading-loose text-center">
                     {['一', '份', '好', '的', '學', '習', '歷', '程', '，', '最', '重', '要', '的', '是', '：', '【'].map((char, i) => (
@@ -888,7 +909,7 @@
                         }}
                         className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl whitespace-nowrap transition-all"
                       >
-                        驗證反思
+                        確認答案
                       </button>
                     </div>
                   )}
@@ -1034,6 +1055,22 @@
                       <h3 className="text-xl font-bold mb-2 text-cyan-300">尚未插入磁片</h3>
                       <p>先回到學生置物櫃取得未解碼磁片，再回機房操作主控電腦。</p>
                     </div>
+                  ) : !diskInserted ? (
+                    <div className="bg-slate-950/80 border border-cyan-800 rounded-2xl p-8 text-center">
+                      <button
+                        onClick={() => {
+                          setDiskInserted(true);
+                          showToast("磁片已插入，地雷防護網啟動。");
+                        }}
+                        className="group w-full max-w-sm mx-auto bg-black/60 hover:bg-cyan-950/70 border-2 border-cyan-500/50 hover:border-cyan-300 rounded-2xl p-8 transition-all shadow-[0_0_24px_rgba(6,182,212,0.18)]"
+                      >
+                        <div className="text-7xl mb-4 group-hover:scale-110 transition-transform">💽</div>
+                        <h3 className="text-2xl font-black text-cyan-300 mb-3">未解碼磁片</h3>
+                        <p className="text-slate-300 leading-relaxed">
+                          點擊磁片物件，插入主控電腦並啟動踩地雷解碼程序。
+                        </p>
+                      </button>
+                    </div>
                   ) : (
                     <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
                       <div className="bg-black/50 border border-cyan-800 rounded-2xl p-4 md:p-5">
@@ -1108,7 +1145,7 @@
                         ) : (
                           <div className="animate-in fade-in">
                             <p className="text-cyan-200 text-sm leading-relaxed mb-4">
-                              地雷位置已轉譯為英文單字。請輸入地雷格顯示的單字，大小寫皆可，完成磁片退出程序。
+                              地雷位置已轉譯為英文單字。請輸入地雷格顯示的英文字母，大小寫皆可，完成磁片退出程序。
                             </p>
                             <input
                               type="text"
@@ -1117,7 +1154,7 @@
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') completeMachineRoom();
                               }}
-                              placeholder="輸入 EVIDENCE 或 evidence"
+                              placeholder="輸入英文字母（大小寫不限）"
                               className="w-full bg-black border border-cyan-500/60 text-cyan-100 px-5 py-3 rounded-xl outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-300 text-lg text-center placeholder:text-cyan-200/40 mb-3"
                             />
                             <button
@@ -1478,6 +1515,113 @@
         </div>
       );
 
+      const getClearTimeText = () => {
+        const elapsed = Math.max(0, 1200 - timeLeft);
+        return `${Math.floor(elapsed / 60)} 分 ${elapsed % 60} 秒`;
+      };
+
+      const generateCertificateImage = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 1200;
+          canvas.height = 800;
+          const ctx = canvas.getContext("2d");
+          const gradient = ctx.createLinearGradient(0, 0, 1200, 800);
+          gradient.addColorStop(0, "#061b2e");
+          gradient.addColorStop(0.5, "#10233f");
+          gradient.addColorStop(1, "#111827");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, 1200, 800);
+
+          ctx.strokeStyle = "#facc15";
+          ctx.lineWidth = 10;
+          ctx.strokeRect(50, 50, 1100, 700);
+          ctx.strokeStyle = "rgba(34,211,238,0.7)";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(78, 78, 1044, 644);
+
+          ctx.fillStyle = "#facc15";
+          ctx.font = "bold 64px Microsoft JhengHei, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("AI 學習歷程密室 破關證書", 600, 180);
+
+          ctx.fillStyle = "#e5e7eb";
+          ctx.font = "32px Microsoft JhengHei, sans-serif";
+          ctx.fillText("授予特務", 600, 270);
+
+          ctx.fillStyle = "#67e8f9";
+          ctx.font = "bold 56px Microsoft JhengHei, sans-serif";
+          ctx.fillText(playerName || "匿名特務", 600, 345);
+
+          ctx.fillStyle = "#f8fafc";
+          ctx.font = "34px Microsoft JhengHei, sans-serif";
+          ctx.fillText(`最終特務積分：${score} / 100`, 600, 430);
+          ctx.fillText(`破關時間：${getClearTimeText()}`, 600, 490);
+
+          ctx.fillStyle = "#fde68a";
+          ctx.font = "bold 36px Microsoft JhengHei, sans-serif";
+          ctx.fillText("完成系統覆寫，找回真實學習歷程的核心價值", 600, 580);
+
+          ctx.fillStyle = "#94a3b8";
+          ctx.font = "24px Microsoft JhengHei, sans-serif";
+          ctx.fillText(new Date().toLocaleDateString("zh-TW"), 600, 665);
+
+          const dataUrl = canvas.toDataURL("image/png");
+          setCertificateImage(dataUrl);
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = `AI學習歷程密室-破關證書-${playerName || "匿名特務"}.png`;
+          link.click();
+          showToast("破關證書已產生，可直接上傳到下方留言板。");
+        } catch (e) {
+          showToast("證書產生失敗，請改用截圖上傳。");
+        }
+      };
+
+      const handleCertificateUpload = (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+          showToast("請上傳圖片格式的破關證書。");
+          return;
+        }
+        if (file.size > 1600000) {
+          showToast("圖片檔案太大，請先壓縮或截圖裁小一點。");
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => setCertificateImage(reader.result);
+        reader.readAsDataURL(file);
+      };
+
+      const submitFeedback = () => {
+        if (!feedbackText.trim()) {
+          showToast("請先寫下破關心得或回饋。");
+          return;
+        }
+
+        const entry = {
+          id: Date.now(),
+          name: playerName || "匿名特務",
+          score,
+          clearTime: getClearTimeText(),
+          text: feedbackText.trim(),
+          certificateImage,
+          date: new Date().toLocaleString("zh-TW")
+        };
+        const nextEntries = [entry, ...feedbackEntries].slice(0, 12);
+        setFeedbackEntries(nextEntries);
+        try {
+          localStorage.setItem("aiPortfolioFeedbackEntries", JSON.stringify(nextEntries));
+        } catch (e) {
+          showToast("留言太多或圖片太大，請刪減後再試。");
+          return;
+        }
+        setFeedbackText("");
+        setCertificateImage("");
+        showToast("心得已加入留言板。");
+      };
+
       const renderCoverScreen = () => (
         <div
           className="min-h-screen relative overflow-hidden bg-slate-950"
@@ -1685,7 +1829,7 @@
                     </p>
 
                     <p className="text-lg text-slate-400 mb-10 relative z-10">
-                      成功於 <span className="text-white font-bold">{Math.floor((1200 - timeLeft) / 60)} 分 {(1200 - timeLeft) % 60} 秒</span> 內覆寫 AI 審查系統，<br/>找回了真實學習歷程的核心價值。
+                      成功於 <span className="text-white font-bold">{getClearTimeText()}</span> 內覆寫 AI 審查系統，<br/>找回了真實學習歷程的核心價值。
                     </p>
 
                     <div className="bg-black/50 border border-yellow-600/50 p-6 md:p-8 rounded-2xl mb-10 relative z-10 max-w-2xl mx-auto shadow-inner">
@@ -1694,9 +1838,71 @@
                       </p>
                     </div>
 
-                    <button onClick={() => window.location.reload()} className="px-10 py-4 bg-yellow-500 hover:bg-yellow-400 text-black rounded-full font-black text-lg hover:scale-105 transition-transform shadow-[0_0_20px_rgba(234,179,8,0.4)] relative z-10">
-                      重新開始體驗
-                    </button>
+                    <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10 mb-10">
+                      <button onClick={generateCertificateImage} className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-black rounded-full font-black text-lg hover:scale-105 transition-transform shadow-[0_0_20px_rgba(34,211,238,0.35)]">
+                        下載破關證書
+                      </button>
+                      <button onClick={() => window.location.reload()} className="px-8 py-4 bg-yellow-500 hover:bg-yellow-400 text-black rounded-full font-black text-lg hover:scale-105 transition-transform shadow-[0_0_20px_rgba(234,179,8,0.4)]">
+                        重新開始體驗
+                      </button>
+                    </div>
+
+                    <div className="relative z-10 text-left bg-slate-950/85 border border-cyan-500/40 rounded-2xl p-5 md:p-7 max-w-4xl mx-auto">
+                      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
+                        <div>
+                          <h3 className="text-2xl md:text-3xl font-black text-cyan-300 mb-2">破關心得留言板</h3>
+                          <p className="text-sm text-slate-400">可上傳破關證書圖片並留下心得。此靜態版會保存在目前這台裝置的瀏覽器中。</p>
+                        </div>
+                        <label className="inline-flex items-center justify-center px-5 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-200 rounded-xl font-bold cursor-pointer transition-all">
+                          上傳證書圖片
+                          <input type="file" accept="image/*" onChange={handleCertificateUpload} className="hidden" />
+                        </label>
+                      </div>
+
+                      {certificateImage && (
+                        <div className="mb-5">
+                          <p className="text-xs text-cyan-300 font-bold mb-2">證書預覽</p>
+                          <img src={certificateImage} alt="破關證書預覽" className="w-full max-h-72 object-contain bg-black/50 border border-cyan-900 rounded-xl" />
+                        </div>
+                      )}
+
+                      <textarea
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value)}
+                        placeholder="寫下你的破關心得、最喜歡的關卡，或給老師/作者的回饋..."
+                        className="w-full min-h-32 bg-black/70 border border-cyan-800 text-cyan-50 px-5 py-4 rounded-xl outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-300 placeholder:text-slate-500 mb-4"
+                      />
+                      <button onClick={submitFeedback} className="w-full md:w-auto px-8 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-black rounded-xl transition-all">
+                        送出心得
+                      </button>
+
+                      <div className="mt-8 border-t border-slate-700 pt-6">
+                        <h4 className="text-xl font-black text-yellow-300 mb-4">玩家分享</h4>
+                        {feedbackEntries.length === 0 ? (
+                          <p className="text-slate-500 text-center py-8">目前還沒有留言，成為第一位分享破關心得的玩家。</p>
+                        ) : (
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {feedbackEntries.map(entry => (
+                              <div key={entry.id} className="bg-slate-900/90 border border-slate-700 rounded-xl p-4">
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                  <div>
+                                    <div className="text-cyan-300 font-black">{entry.name}</div>
+                                    <div className="text-xs text-slate-500">{entry.date}</div>
+                                  </div>
+                                  <div className="text-right text-xs text-yellow-300 font-bold">
+                                    {entry.score}/100<br/>{entry.clearTime}
+                                  </div>
+                                </div>
+                                {entry.certificateImage && (
+                                  <img src={entry.certificateImage} alt={`${entry.name} 的破關證書`} className="w-full max-h-48 object-contain bg-black/50 border border-slate-800 rounded-lg mb-3" />
+                                )}
+                                <p className="text-slate-200 leading-relaxed whitespace-pre-wrap">{entry.text}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
 
