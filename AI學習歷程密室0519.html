@@ -518,7 +518,7 @@
         },
         prepRoom: {
           hint: "點擊相鄰碎片交換位置，拼成一張完整的電路板背景，並讀出上面的句子。",
-          solution: "拼出完整的圖後，下方文字框請輸入「熱忱」。"
+          solution: "拼出完整的圖後，觀察浮現的衣服、刀子與愛心符號；下方文字框請輸入「初心」。"
         },
         finalBoss: {
           hint: "打開下方道具欄，檢視每一個道具。把它們上面隱藏的字根：【十】【具】【宀】【毋】【貝】組合起來。",
@@ -1209,12 +1209,12 @@
         };
 
         const verifyPrepCode = () => {
-          if (prepCode.trim() === "熱忱") {
+          if (prepCode.trim() === "初心") {
             setPrepSolved(true);
             addToInventory("motivation");
-            showToast("✅ 拼圖還原正確！你找回了最純粹的動機！");
+            showToast("✅ 拼圖還原正確！你找回了最初的心意！");
           } else {
-            showToast("❌ 線索錯誤。請先完成拼圖，找出隱藏的關鍵詞。");
+            showToast("❌ 線索錯誤。請先完成拼圖，解讀浮現的符號。");
           }
         };
 
@@ -1254,9 +1254,15 @@
                     ))}
                     {isPuzzleSolved && (
                       <div className="absolute inset-0 bg-black/70 flex items-center justify-center animate-in fade-in z-20 pointer-events-none">
-                        <span className="text-3xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)] border-2 border-yellow-400 px-6 py-3 rounded-xl bg-black/50">
-                          關鍵線索：熱忱
-                        </span>
+                        <div className="border-2 border-yellow-400 px-5 py-4 rounded-xl bg-black/60 shadow-[0_0_18px_rgba(250,204,21,0.65)]">
+                          <div className="flex items-center justify-center gap-3 md:gap-4 text-4xl md:text-5xl drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]">
+                            <span>👕</span>
+                            <span className="text-yellow-300 text-3xl md:text-4xl font-black">+</span>
+                            <span>🔪</span>
+                            <span className="mx-2 md:mx-4 text-yellow-300 text-2xl md:text-3xl font-black">→</span>
+                            <span>❤️</span>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1266,7 +1272,7 @@
                       type="text"
                       value={prepCode}
                       onChange={(e) => setPrepCode(e.target.value)}
-                      placeholder="輸入拼圖浮現的線索..."
+                      placeholder="輸入二字中文"
                       disabled={prepSolved}
                       className="flex-1 bg-black border border-purple-500/50 text-white px-4 py-2 rounded-xl outline-none focus:border-purple-400 text-center"
                     />
