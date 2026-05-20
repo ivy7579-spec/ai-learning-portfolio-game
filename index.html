@@ -875,7 +875,7 @@
                   </div>
                   {filterActive && (
                     <div className="relative z-10 mt-6 text-center text-amber-100 text-sm font-bold tracking-wider">
-                      將 ㄏ ㄡ 田 心 組成兩字中文
+                      這...這是什麼意思?
                     </div>
                   )}
                 </div>
@@ -896,7 +896,7 @@
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             if (deskAnswer.trim() === "反思") { setDeskSolved(true); addToInventory("reflection"); }
-                            else showToast("驗證失敗。請將 ㄏ ㄡ 田 心 組成兩字中文。");
+                            else showToast("驗證失敗。這些線索似乎還沒被正確解讀。");
                           }
                         }}
                         placeholder="輸入兩字中文答案"
@@ -905,7 +905,7 @@
                       <button
                         onClick={() => {
                           if (deskAnswer.trim() === "反思") { setDeskSolved(true); addToInventory("reflection"); }
-                          else showToast("驗證失敗。請將 ㄏ ㄡ 田 心 組成兩字中文。");
+                          else showToast("驗證失敗。這些線索似乎還沒被正確解讀。");
                         }}
                         className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl whitespace-nowrap transition-all"
                       >
