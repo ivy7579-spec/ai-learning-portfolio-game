@@ -503,7 +503,7 @@
         },
         machineRoom: {
           hint: "先取得學生置物櫃裡的未解碼磁片，再進入機房。左鍵開安全格，右鍵或插旗模式標記可疑地雷。",
-          solution: "避開所有地雷並打開安全格後，地雷位置會顯示 EVIDENCE；輸入 evidence 後即可取回證據磁片。"
+          solution: "避開所有地雷並打開安全格後，地雷位置會顯示 EVIDENCE；輸入 EVIDENCE 或 evidence 都可取回證據磁片。"
         },
         prepRoom: {
           hint: "點擊相鄰碎片交換位置，拼成一張完整的電路板背景，並讀出上面的句子。",
@@ -846,18 +846,17 @@
                     {['一', '份', '好', '的', '學', '習', '歷', '程', '，', '最', '重', '要', '的', '是', '：', '【'].map((char, i) => (
                       <span key={i} className={filterActive ? 'text-black/70' : 'text-slate-800'}>{char}</span>
                     ))}
-                    <span className={`transition-opacity duration-1000 ${filterActive ? 'text-white font-bold bg-black px-2' : 'text-slate-800'}`}>反</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-red-500 font-bold px-1'}`}>營</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-fuchsia-600 font-bold px-1'}`}>隊</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-orange-500 font-bold px-1'}`}>排</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-sky-600 font-bold px-1'}`}>名</span>
-                    <span className={`transition-opacity duration-1000 ${filterActive ? 'text-white font-bold bg-black px-2' : 'text-slate-800'}`}>思</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-red-500 font-bold px-1'}`}>好</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-lime-600 font-bold px-1'}`}>多</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-purple-600 font-bold px-1'}`}>獎</span>
-                    <span className={`transition-opacity duration-500 ${filterActive ? 'opacity-0 hidden' : 'text-rose-500 font-bold px-1'}`}>狀</span>
+                    <span className={`inline-flex items-center justify-center mx-1 my-1 min-w-12 h-12 rounded-lg transition-all duration-700 ${filterActive ? 'text-white bg-black border border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.35)]' : 'text-red-500 bg-red-100/70'}`}>ㄏ</span>
+                    <span className={`inline-flex items-center justify-center mx-1 my-1 min-w-12 h-12 rounded-lg transition-all duration-700 ${filterActive ? 'text-white bg-black border border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.35)]' : 'text-fuchsia-600 bg-fuchsia-100/70'}`}>ㄡ</span>
+                    <span className={`inline-flex items-center justify-center mx-1 my-1 min-w-12 h-12 rounded-lg transition-all duration-700 ${filterActive ? 'text-white bg-black border border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.35)]' : 'text-orange-600 bg-orange-100/70'}`}>田</span>
+                    <span className={`inline-flex items-center justify-center mx-1 my-1 min-w-12 h-12 rounded-lg transition-all duration-700 ${filterActive ? 'text-white bg-black border border-white/60 shadow-[0_0_16px_rgba(255,255,255,0.35)]' : 'text-sky-600 bg-sky-100/70'}`}>心</span>
                     <span className={filterActive ? 'text-black/70' : 'text-slate-800'}>】。</span>
                   </div>
+                  {filterActive && (
+                    <div className="relative z-10 mt-6 text-center text-amber-100 text-sm font-bold tracking-wider">
+                      將 ㄏ ㄡ 田 心 組成兩字中文
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -876,16 +875,16 @@
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             if (deskAnswer.trim() === "反思") { setDeskSolved(true); addToInventory("reflection"); }
-                            else showToast("驗證失敗。請輸入濾色片顯示出的兩個中文字。");
+                            else showToast("驗證失敗。請將 ㄏ ㄡ 田 心 組成兩字中文。");
                           }
                         }}
-                        placeholder="輸入濾色片顯示的兩個中文字"
+                        placeholder="輸入兩字中文答案"
                         className="flex-1 bg-black/70 border border-amber-500/60 text-amber-100 px-5 py-3 rounded-xl outline-none focus:border-amber-300 focus:ring-1 focus:ring-amber-300 text-lg text-center placeholder:text-amber-200/40"
                       />
                       <button
                         onClick={() => {
                           if (deskAnswer.trim() === "反思") { setDeskSolved(true); addToInventory("reflection"); }
-                          else showToast("驗證失敗。請輸入濾色片顯示出的兩個中文字。");
+                          else showToast("驗證失敗。請將 ㄏ ㄡ 田 心 組成兩字中文。");
                         }}
                         className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl whitespace-nowrap transition-all"
                       >
@@ -1003,7 +1002,8 @@
           else revealCell(idx);
         };
         const completeMachineRoom = () => {
-          if (machineAnswer.trim().toLowerCase() === "evidence") {
+          const normalizedAnswer = machineAnswer.trim().toLowerCase();
+          if (normalizedAnswer === "evidence") {
             setMachineSolved(true);
             setInventory(prev => {
               const withoutDisk = prev.filter(id => id !== "disk");
@@ -1108,7 +1108,7 @@
                         ) : (
                           <div className="animate-in fade-in">
                             <p className="text-cyan-200 text-sm leading-relaxed mb-4">
-                              地雷位置已轉譯為英文單字。請輸入地雷格顯示的單字，完成磁片退出程序。
+                              地雷位置已轉譯為英文單字。請輸入地雷格顯示的單字，大小寫皆可，完成磁片退出程序。
                             </p>
                             <input
                               type="text"
@@ -1117,7 +1117,7 @@
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') completeMachineRoom();
                               }}
-                              placeholder="輸入英文單字"
+                              placeholder="輸入 EVIDENCE 或 evidence"
                               className="w-full bg-black border border-cyan-500/60 text-cyan-100 px-5 py-3 rounded-xl outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-300 text-lg text-center placeholder:text-cyan-200/40 mb-3"
                             />
                             <button
