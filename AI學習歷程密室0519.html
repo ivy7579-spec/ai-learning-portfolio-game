@@ -1232,7 +1232,7 @@
                     <span className="text-purple-300 font-bold">請點擊並交換碎片，重組這幅破碎的記憶，找出隱藏的關鍵詞。</span>
                   </p>
 
-                  <div className="grid grid-cols-3 gap-1 w-64 h-64 md:w-80 md:h-80 mx-auto mb-8 bg-purple-900/30 p-2 rounded-xl border border-purple-500/50 relative overflow-hidden shadow-[0_0_20px_rgba(147,51,234,0.3)]">
+                  <div className="grid grid-cols-3 gap-1 w-64 h-64 md:w-80 md:h-80 mx-auto mb-8 bg-purple-900/30 p-2 rounded-xl border border-purple-500/50 relative overflow-visible shadow-[0_0_20px_rgba(147,51,234,0.3)]">
                     {puzzlePieces.map((pieceVal, index) => (
                       <button
                         key={index}
@@ -1253,14 +1253,14 @@
                       </button>
                     ))}
                     {isPuzzleSolved && (
-                      <div className="absolute inset-0 bg-black/70 flex items-center justify-center animate-in fade-in z-20 pointer-events-none">
-                        <div className="border-2 border-yellow-400 px-5 py-4 rounded-xl bg-black/60 shadow-[0_0_18px_rgba(250,204,21,0.65)]">
-                          <div className="flex items-center justify-center gap-3 md:gap-4 text-4xl md:text-5xl drop-shadow-[0_0_15px_rgba(250,204,21,0.8)]">
-                            <span>👕</span>
+                      <div className="absolute inset-0 flex items-center justify-center animate-in fade-in z-20 pointer-events-none">
+                        <div className="absolute inset-0 bg-black/70 rounded-xl"></div>
+                        <div className="relative z-10 w-[min(92vw,430px)] border-2 border-yellow-400 px-5 py-4 rounded-xl bg-black/70 shadow-[0_0_18px_rgba(250,204,21,0.65)]">
+                          <div className="flex items-center justify-center gap-3 md:gap-5 text-4xl md:text-5xl drop-shadow-[0_0_15px_rgba(250,204,21,0.8)] whitespace-nowrap">
+                            <span className="text-yellow-100 font-black">衣</span>
                             <span className="text-yellow-300 text-3xl md:text-4xl font-black">+</span>
-                            <span>🔪</span>
-                            <span className="mx-2 md:mx-4 text-yellow-300 text-2xl md:text-3xl font-black">→</span>
-                            <span>❤️</span>
+                            <span className="text-yellow-100 font-black">刀</span>
+                            <span className="mx-3 md:mx-6">❤️</span>
                           </div>
                         </div>
                       </div>
